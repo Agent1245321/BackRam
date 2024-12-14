@@ -12,7 +12,9 @@ public class PlayerScript : MonoBehaviour
         standing,
         sliding,
         rising,
-        falling
+        falling,
+        bracing, // :)
+        tumbling
     }
 
     
@@ -20,51 +22,77 @@ public class PlayerScript : MonoBehaviour
     public GameObject pBody; //player body
     public GameObject pCam; //player camera
 
-    //Camera
+    //Camera - - - - -  MAY HAVE AN ERROR with vsense as it seems much more restrictive than hsense
     //settings
+        public float cFocusSpeed;
         public float speedFovSkew;
         public float hSens; //horizontal sensitivity set in editor
         public float vSens; //verticle sensitivity set in editor
         public bool invY; //toggle to invert Y axis when looking
 
-    //values
-    private Vector3 pForward;
+        //values
+        private float setFov;
+        private Vector3 pForward;
         private Vector3 pForwardFlat;
-    private Vector3 pRight;
-    private Vector3 pRightFlat;
+        private Vector3 pRight;
+        private Vector3 pRightFlat;
         private float invYval; //convert the invY bool into an float 1/-1
         private Vector2 lookInput; //pull the Vector 2 from the input system
-    private float lookXClamped; //clamped x value when looking so you cant turn while going fast
-    private float lookYClamped; //clamped y value when looking so you cant turn while going fast
+        private float lookXClamped; //clamped x value when looking so you cant turn while going fast
+        private float lookYClamped; //clamped y value when looking so you cant turn while going fast
         private float vLookAngle; //independant Y axis for camera control
 
-    //Movement
-    //settings
-    public float maxVelocity;
-    public float acceleration;
-    public float maxStrafeSpeed;
-    public float drag; // for really fast speeds
-    public float stoppingPower; // for regular stopping
-    //values
-    private Vector2 moveInput; //pull the Vector 2 from the input system
-    private float xVelocity;
-    private float zVelocity;
+    //Movement - - - - - 
+        //settings
+        public float maxVelocity;
+        public float acceleration;
+        public float maxStrafeSpeed;
+        public float drag; // for really fast speeds
+        public float stoppingPower; // for regular stopping
+        
+        //values
+        private Vector2 moveInput; //pull the Vector 2 from the input system
+        private float xVelocity;
+        private float zVelocity;
+        public float yVelocity;
+        
 
-    private bool isMoving;
-    private bool isMovingx;
+        private bool isMoving;
+        private bool isMovingx;
 
-    //Sliding
-    //settings
+    //Sliding - - - - - 
+        //settings
         public float slideLength;
         public float slideBoost;
         public float slideRecharge;
 
-    //values
-    private float slideCharge;
-    private float sliding;
+        //values
+        private float slideCharge;
+        private float sliding;
 
-    //logic
-    private States s;
+    //Jumping - - - - -
+        //settings 
+
+        public float maxJump;
+        public float jumpChargeSpeed;
+        public float slideJumpHMod;
+        public float slideJumpVMod;
+
+        //values
+        private float jumping;
+        private float jumpCharge;
+        public bool grounded;
+
+    //bracing
+        //settings
+
+        //values
+        bool solid;
+        float angle;
+        
+
+    //Logic - - - - -
+    public States s;
 
 
 
@@ -89,15 +117,13 @@ public class PlayerScript : MonoBehaviour
 
     public void OnSlide(InputValue v)
     {
+        //gets sliding value from input system
         sliding = v.Get<float>();   
-        if (slideCharge > 0 && s == States.standing)
-        {
-            s = States.sliding;
-            pCam.transform.position = new Vector3(0, 0.3f, 0) + pBody.transform.position;
-            zVelocity *= slideBoost;
-        }
-       
+    }
 
+    public void OnJump(InputValue v)
+    {
+        jumping = v.Get<float>();
     }
     
 
@@ -105,8 +131,22 @@ public class PlayerScript : MonoBehaviour
     void Update()
     {
         pCam.transform.eulerAngles = pBody.transform.eulerAngles + new Vector3(vLookAngle * invYval, 0, 0); //rotate cam vertically -- horizontal in standing action / sliding action
-        Camera.main.fieldOfView = 60f + zVelocity * speedFovSkew; // skew the fov based on speed
+        
+        if(zVelocity > 0)setFov = 60f + zVelocity * speedFovSkew;
+        else setFov = 60f;
 
+        if (Mathf.Abs(Camera.main.fieldOfView - setFov) > 1)
+        {
+            if(Camera.main.fieldOfView < setFov) Camera.main.fieldOfView += cFocusSpeed;
+            else Camera.main.fieldOfView -= cFocusSpeed;
+            // skew the fov based on speed
+        }
+        else
+        {
+            Camera.main.fieldOfView = setFov;
+        }
+
+        
         //Camera Control
         lookYClamped = Mathf.Clamp(lookInput.y * vSens, -10 / (Mathf.Abs(zVelocity) + 1), 10 / (Mathf.Abs(zVelocity) + 1));
         vLookAngle += lookYClamped * vSens; //adjust verticle angle
@@ -114,15 +154,25 @@ public class PlayerScript : MonoBehaviour
         lookXClamped = Mathf.Clamp(lookInput.x * hSens, -10/(Mathf.Abs(zVelocity) + 1), 10/(Mathf.Abs(zVelocity) + 1));
         
         
+        //normalized forward and right vectors for updating velocity
         pForward = pCam.transform.forward;
         pForwardFlat = new Vector3(pForward.x, 0, pForward.z).normalized;
-
         pRight = pCam.transform.right;
         pRightFlat = new Vector3(pRight.x, 0, pRight.z).normalized;
 
         //Movement Control 
         if (Mathf.Abs(moveInput.y) > .5f) { isMoving = true;} else { isMoving = false;}
         if (Mathf.Abs(moveInput.x) > .5f) { isMovingx = true; } else { isMovingx = false; }
+
+        //Jumping Control
+        if (jumping == 1 && jumpCharge < maxJump)
+        {
+            jumpCharge += jumpChargeSpeed;
+        }
+        else if (jumping == 1 && jumpCharge > maxJump)
+        {
+            jumpCharge = maxJump;
+        }
 
         //state check to call different actions
        switch (s)
@@ -136,11 +186,11 @@ public class PlayerScript : MonoBehaviour
                 break;
 
             case States.falling:
-
+                FallingAction();
                 break;
 
             case States.rising:
-
+                RisingAction();
                 break;
 
             default:
@@ -154,11 +204,66 @@ public class PlayerScript : MonoBehaviour
     {
         //apply movement to the player
        pBody.GetComponent<Rigidbody>().linearVelocity = pForwardFlat * zVelocity + pRightFlat * xVelocity + new Vector3(0, pBody.GetComponent<Rigidbody>().linearVelocity.y, 0);
+        yVelocity = pBody.GetComponent <Rigidbody>().linearVelocity.y;
+
+        if(!grounded && yVelocity < 0.1f) s = States.falling;
+
+        
     }
 
+    void BracingAction()
+    {
+
+    }
+
+    void Brace()
+    {
+
+    }
+
+    void TumblingAction()
+    {
+
+    }
+
+    void RisingAction()
+    {
+        if (sliding == 1)
+        {
+            s = States.bracing;
+        }
+        if (yVelocity <= 0) s = States.falling;
+
+        if (jumpCharge > 0 && jumping == 0) jumpCharge = 0;
+    }
+    void FallingAction()
+    {
+        if (sliding == 1)
+        {
+            s = States.tumbling;
+        }
+
+        if (yVelocity >= -0.01f && grounded == true) s = States.standing;
+        
+        if(jumpCharge > 0 && jumping == 0) jumpCharge = 0;
+        
+        
+    }
     void SlidingAction()
     {
         pBody.transform.eulerAngles += new Vector3(0, lookXClamped * .5f, 0); // rotate whole player horizontally at half
+        
+        
+        if (jumping == 0 && jumpCharge > 0)
+        {
+            zVelocity += jumpCharge * slideJumpHMod;
+            pBody.GetComponent<Rigidbody>().linearVelocity += new Vector3(0, jumpCharge * slideJumpVMod, 0);
+            grounded = false;
+            yVelocity = pBody.GetComponent<Rigidbody>().linearVelocity.y;
+            s = States.rising;
+            jumpCharge = 0;
+
+        }
 
         if (slideCharge > 0 && sliding == 1) //reduces slide charge while sliding
         {
@@ -176,8 +281,26 @@ public class PlayerScript : MonoBehaviour
     {
         pBody.transform.eulerAngles += new Vector3(0, lookXClamped, 0); // rotate whole player horizontally
 
+        if (slideCharge > 0 && sliding > 0)
+        {
+            //sets state to sliding if possible, moves camera down, and give the slide boost modifier
+            s = States.sliding;
+            pCam.transform.position = new Vector3(0, 0.3f, 0) + pBody.transform.position;
+            zVelocity *= slideBoost;
+        }
+
         if (slideCharge < slideLength) slideCharge += slideRecharge;
         else slideCharge = slideLength;
+
+        //jumping standard
+        if(jumping == 0 && jumpCharge > 0)
+        {
+            pBody.GetComponent<Rigidbody>().linearVelocity += new Vector3(0, jumpCharge, 0);
+            grounded = false;
+            yVelocity = pBody.GetComponent<Rigidbody>().linearVelocity.y;
+            s = States.rising;
+            jumpCharge = 0;
+        }
        
 
         if (isMoving)
