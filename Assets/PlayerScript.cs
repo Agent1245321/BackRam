@@ -88,6 +88,7 @@ public class PlayerScript : MonoBehaviour
      public float braceSpeed;
         //values
        public bool braced;
+    public float brace;
 
         public float angle;
         
@@ -121,6 +122,11 @@ public class PlayerScript : MonoBehaviour
         //gets sliding value from input system
         sliding = v.Get<float>();   
         
+    }
+
+    public void OnBrace(InputValue v)
+    {
+        brace = v.Get<float>();
     }
 
     public void OnJump(InputValue v)
@@ -251,7 +257,7 @@ public class PlayerScript : MonoBehaviour
 
     void RisingAction()
     {
-        if (sliding == 1)
+        if (brace == 1)
         {
             s = States.bracing;
         }
@@ -261,7 +267,7 @@ public class PlayerScript : MonoBehaviour
     }
     void FallingAction()
     {
-        if (sliding == 1)
+        if (brace == 1)
         {
             s = States.tumbling;
         }

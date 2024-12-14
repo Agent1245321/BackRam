@@ -6,7 +6,7 @@ public class CollisionDetection : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        Debug.Log("stay");
+       
             player.grounded = true;
             
         
@@ -14,7 +14,7 @@ public class CollisionDetection : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        Debug.Log("Exit");
+      
         player.grounded = false;
        
     }
