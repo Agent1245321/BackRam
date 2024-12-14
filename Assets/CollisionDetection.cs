@@ -6,12 +6,16 @@ public class CollisionDetection : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        Debug.Log("Colliding");
-        Debug.Log(player.s == PlayerScript.States.falling);
-        if (player.s == PlayerScript.States.falling)
-        {
+        Debug.Log("stay");
             player.grounded = true;
-            Debug.Log("Grounded");
-        }
+            
+        
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        Debug.Log("Exit");
+        player.grounded = false;
+       
     }
 }

@@ -84,11 +84,12 @@ public class PlayerScript : MonoBehaviour
         public bool grounded;
 
     //bracing
-        //settings
-
+    //settings
+     public float braceSpeed;
         //values
-        bool solid;
-        float angle;
+       public bool braced;
+
+        public float angle;
         
 
     //Logic - - - - -
@@ -119,6 +120,7 @@ public class PlayerScript : MonoBehaviour
     {
         //gets sliding value from input system
         sliding = v.Get<float>();   
+        
     }
 
     public void OnJump(InputValue v)
@@ -130,7 +132,7 @@ public class PlayerScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        pCam.transform.eulerAngles = pBody.transform.eulerAngles + new Vector3(vLookAngle * invYval, 0, 0); //rotate cam vertically -- horizontal in standing action / sliding action
+        pCam.transform.eulerAngles = pBody.transform.eulerAngles + new Vector3(vLookAngle * invYval, angle, 0);//rotate cam vertically -- horizontal in standing action / sliding action
         
         if(zVelocity > 0)setFov = 60f + zVelocity * speedFovSkew;
         else setFov = 60f;
@@ -155,9 +157,9 @@ public class PlayerScript : MonoBehaviour
         
         
         //normalized forward and right vectors for updating velocity
-        pForward = pCam.transform.forward;
+        pForward = pBody.transform.forward;
         pForwardFlat = new Vector3(pForward.x, 0, pForward.z).normalized;
-        pRight = pCam.transform.right;
+        pRight = pBody.transform.right;
         pRightFlat = new Vector3(pRight.x, 0, pRight.z).normalized;
 
         //Movement Control 
@@ -193,6 +195,14 @@ public class PlayerScript : MonoBehaviour
                 RisingAction();
                 break;
 
+            case States.bracing:
+                BracingAction();
+                break;
+
+            case States.tumbling:
+                TumblingAction();
+                break;
+
             default:
                 StandingAction();
                 break;
@@ -206,19 +216,32 @@ public class PlayerScript : MonoBehaviour
        pBody.GetComponent<Rigidbody>().linearVelocity = pForwardFlat * zVelocity + pRightFlat * xVelocity + new Vector3(0, pBody.GetComponent<Rigidbody>().linearVelocity.y, 0);
         yVelocity = pBody.GetComponent <Rigidbody>().linearVelocity.y;
 
-        if(!grounded && yVelocity < 0.1f) s = States.falling;
+        
 
         
     }
 
     void BracingAction()
     {
-
+        Brace();
     }
 
     void Brace()
     {
+        if (angle < 179)
+        {
+            angle += braceSpeed;
+        }
+        else
+        {
+            braced = true;
+            angle = 180;
+        }
+    }
 
+    void UnBrace()
+    {
+        
     }
 
     void TumblingAction()
@@ -242,6 +265,8 @@ public class PlayerScript : MonoBehaviour
         {
             s = States.tumbling;
         }
+
+        zVelocity *= drag;
 
         if (yVelocity >= -0.01f && grounded == true) s = States.standing;
         
@@ -301,13 +326,25 @@ public class PlayerScript : MonoBehaviour
             s = States.rising;
             jumpCharge = 0;
         }
+
+        if (!grounded)
+        {
+            if (yVelocity > 0)
+            {
+                s = States.rising;
+            }
+            else
+            {
+                s = States.falling;
+            }
+        }   
        
 
         if (isMoving)
         {
             if (Mathf.Abs(zVelocity) < maxVelocity) zVelocity += (acceleration * moveInput.y); //if going less than top speed add speed
-            else if (zVelocity - maxVelocity > .01f) zVelocity = ((zVelocity - maxVelocity) * .99f) + maxVelocity; //if exceeding top speed by large margin slow gradually
-            else if (zVelocity + maxVelocity < -.01f) zVelocity = ((zVelocity + maxVelocity) * .99f) - maxVelocity; // for moving backwards fast
+            else if (zVelocity - maxVelocity > .01f) zVelocity = ((zVelocity - maxVelocity) * drag) + maxVelocity; //if exceeding top speed by large margin slow gradually
+            else if (zVelocity + maxVelocity < -.01f) zVelocity = ((zVelocity + maxVelocity) * drag) - maxVelocity; // for moving backwards fast
             else if (moveInput.y > 0 && zVelocity > 0 && zVelocity - maxVelocity <= .01f) zVelocity = maxVelocity;
             else if (moveInput.y < 0 && zVelocity < 0 && zVelocity + maxVelocity >= -.01f) zVelocity = -maxVelocity;// if exceeding top speed by shallow margin set speed to top speed
             else zVelocity *= .99f; //this is a strange failsafe incase a computer player changes the input from -1 to 1 or viceversa in a single frame while at top speed
@@ -321,8 +358,8 @@ public class PlayerScript : MonoBehaviour
         if (isMovingx)
         {
             if (Mathf.Abs(xVelocity) < maxStrafeSpeed) xVelocity += (acceleration * moveInput.x); //if going less than top speed add speed
-            else if (xVelocity - maxStrafeSpeed > .01f) xVelocity = ((xVelocity - maxStrafeSpeed) * .99f) + maxStrafeSpeed; //if exceeding top speed by large margin slow gradually
-            else if (xVelocity + maxStrafeSpeed < -.01f) xVelocity = ((xVelocity + maxStrafeSpeed) * .99f) - maxStrafeSpeed; // for moving backwards fast
+            else if (xVelocity - maxStrafeSpeed > .01f) xVelocity = ((xVelocity - maxStrafeSpeed) * drag) + maxStrafeSpeed; //if exceeding top speed by large margin slow gradually
+            else if (xVelocity + maxStrafeSpeed < -.01f) xVelocity = ((xVelocity + maxStrafeSpeed) * drag) - maxStrafeSpeed; // for moving backwards fast
             else if (moveInput.x > 0 && xVelocity > 0 && xVelocity - maxStrafeSpeed <= .01f) xVelocity = maxStrafeSpeed; // if exceeding top speed by shallow margin set speed to top speed
             else if (moveInput.x < 0 && xVelocity < 0 && +maxStrafeSpeed >= -.01f) xVelocity = -maxStrafeSpeed;
             else xVelocity *= .99f; //this is a strange failsafe incase a computer player changes the input from -1 to 1 or viceversa in a single frame while at top speed
