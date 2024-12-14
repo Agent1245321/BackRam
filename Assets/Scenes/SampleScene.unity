@@ -728,16 +728,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pBody: {fileID: 1065209271}
   pCam: {fileID: 330585543}
+  speedFovSkew: 1.5
   hSens: 0.3
   vSens: 0.3
   invY: 1
-  lookXClamped: 0
-  lookYClamped: 0
-  maxVelocity: 130
-  acceleration: 0.05
+  maxVelocity: 13
+  acceleration: 0.03
   maxStrafeSpeed: 8
   drag: 0.999
   stoppingPower: 0.995
+  slideLength: 8
+  slideBoost: 1.3
+  slideRecharge: 0.02
 --- !u!114 &483405015
 MonoBehaviour:
   m_ObjectHideFlags: 0
