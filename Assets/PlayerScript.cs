@@ -260,16 +260,7 @@ public class PlayerScript : MonoBehaviour
         
     }
 
-    void BracingAction()
-    {
-        Brace();
-        LowerCamera();
-
-        if(grounded)
-        {
-            s = States.rolling;
-        }
-    }
+    
 
     void Brace()
     {
@@ -306,9 +297,26 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    void BracingAction()
+    {
+        Brace();
+        LowerCamera();
+
+        if (yVelocity < 0)
+        {
+            s = States.tumbling;
+        }
+    }
+
     void TumblingAction()
     {
+        Brace();
         LowerCamera();
+
+        if (grounded)
+        {
+            s = States.rolling;
+        }
     }
 
     void RisingAction()
