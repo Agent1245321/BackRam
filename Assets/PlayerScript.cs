@@ -14,7 +14,9 @@ public class PlayerScript : MonoBehaviour
         rising,
         falling,
         bracing, // :)
-        tumbling
+        tumbling,
+        rolling,
+        wallRunning
     }
 
     
@@ -41,6 +43,7 @@ public class PlayerScript : MonoBehaviour
         private float lookXClamped; //clamped x value when looking so you cant turn while going fast
         private float lookYClamped; //clamped y value when looking so you cant turn while going fast
         private float vLookAngle; //independant Y axis for camera control
+        private float camHeight;
 
     //Movement - - - - - 
         //settings
@@ -96,6 +99,15 @@ public class PlayerScript : MonoBehaviour
     //Logic - - - - -
     public States s;
 
+    //rolling
+        //settings
+        public int rollRevolutions;
+        public float rollSpeed;
+        
+        //values
+        public float roll;
+        
+
 
 
     // Start is called before the first frame update
@@ -134,11 +146,29 @@ public class PlayerScript : MonoBehaviour
         jumping = v.Get<float>();
     }
     
+    
+    public void LowerCamera()
+    {
+        if(camHeight > .3)
+        {
+            camHeight -= .01f;
+        }
+        
+    }
+
+    public void RestoreCamera()
+    {
+        if (camHeight < .75)
+        {
+            camHeight += .01f;
+        }
+       
+    }
 
     // Update is called once per frame
     void Update()
     {
-        pCam.transform.eulerAngles = pBody.transform.eulerAngles + new Vector3(vLookAngle * invYval, angle, 0);//rotate cam vertically -- horizontal in standing action / sliding action
+        
         
         if(zVelocity > 0)setFov = 60f + zVelocity * speedFovSkew;
         else setFov = 60f;
@@ -157,8 +187,7 @@ public class PlayerScript : MonoBehaviour
         
         //Camera Control
         lookYClamped = Mathf.Clamp(lookInput.y * vSens, -10 / (Mathf.Abs(zVelocity) + 1), 10 / (Mathf.Abs(zVelocity) + 1));
-        vLookAngle += lookYClamped * vSens; //adjust verticle angle
-        vLookAngle = Mathf.Clamp(vLookAngle, -80f, 80f); //restrain angle from -90 to 90 (so we dont break our neck)
+        
         lookXClamped = Mathf.Clamp(lookInput.x * hSens, -10/(Mathf.Abs(zVelocity) + 1), 10/(Mathf.Abs(zVelocity) + 1));
         
         
@@ -209,6 +238,10 @@ public class PlayerScript : MonoBehaviour
                 TumblingAction();
                 break;
 
+            case States.rolling:
+                RollingAction();
+                break;
+
             default:
                 StandingAction();
                 break;
@@ -230,29 +263,52 @@ public class PlayerScript : MonoBehaviour
     void BracingAction()
     {
         Brace();
+        LowerCamera();
+
+        if(grounded)
+        {
+            s = States.rolling;
+        }
     }
 
     void Brace()
     {
-        if (angle < 179)
+        if (angle < 179f)
         {
-            angle += braceSpeed;
+            angle = 1 + angle * (1 + braceSpeed);
         }
         else
         {
             braced = true;
-            angle = 180;
+            angle = 180f;
         }
     }
 
     void UnBrace()
     {
-        
+        Debug.Log("Unbracing");
+        RestoreCamera();
+        if (Mathf.Abs(angle) > 5f)
+        {
+            Debug.Log("Fixing Angle");
+            angle -= braceSpeed;
+        }
+        else if (Mathf.Abs(angle) < -5f)
+            {
+                Debug.Log("Fixing Angle");
+                angle += braceSpeed * 10;
+            }
+            else
+        {
+            Debug.Log("Fixed angle");
+            angle = 0.001f;
+            braced = false;
+        }
     }
 
     void TumblingAction()
     {
-
+        LowerCamera();
     }
 
     void RisingAction()
@@ -282,9 +338,17 @@ public class PlayerScript : MonoBehaviour
     }
     void SlidingAction()
     {
+        vLookAngle += lookYClamped * vSens; //adjust verticle angle
+        vLookAngle = Mathf.Clamp(vLookAngle, -30f, 80f); //restrain angle from -90 to 90 (so we dont break our neck)
         pBody.transform.eulerAngles += new Vector3(0, lookXClamped * .5f, 0); // rotate whole player horizontally at half
-        
-        
+        LowerCamera();
+
+        if (brace == 1)
+        {
+            
+            s = States.rolling;
+        }
+
         if (jumping == 0 && jumpCharge > 0)
         {
             zVelocity += jumpCharge * slideJumpHMod;
@@ -304,19 +368,23 @@ public class PlayerScript : MonoBehaviour
         {
             //stands the player back up after running out of slide/releasing shift
             s = States.standing;
-            pCam.transform.position = new Vector3(0, 0.75f, 0) + pBody.transform.position;
+            
             zVelocity /= slideBoost;
         }
     }
-        void StandingAction()
+    void StandingAction()
     {
+        vLookAngle += lookYClamped * vSens; //adjust verticle angle
+        vLookAngle = Mathf.Clamp(vLookAngle, -80f, 80f); //restrain angle from -90 to 90 (so we dont break our neck)
         pBody.transform.eulerAngles += new Vector3(0, lookXClamped, 0); // rotate whole player horizontally
+        
+        UnBrace();
 
         if (slideCharge > 0 && sliding > 0)
         {
             //sets state to sliding if possible, moves camera down, and give the slide boost modifier
             s = States.sliding;
-            pCam.transform.position = new Vector3(0, 0.3f, 0) + pBody.transform.position;
+            
             zVelocity *= slideBoost;
         }
 
@@ -375,5 +443,26 @@ public class PlayerScript : MonoBehaviour
             if (Mathf.Abs(xVelocity) > .1f) xVelocity *= stoppingPower; //if going faster than snail slow down by a lot
             else xVelocity = 0; // if going slower than snail stop completely
         }
+    }
+
+    public void RollingAction()
+    {
+        float totalDegrees = 360 * rollRevolutions;
+
+        Brace();
+        if (vLookAngle < totalDegrees)
+        { vLookAngle += rollSpeed; }
+        else
+        {
+            vLookAngle = 0.01f;
+            s = States.standing;
+        }
+
+    }
+
+    private void LateUpdate()
+    {
+        pCam.transform.position = new Vector3(0, camHeight, 0) + pBody.transform.position;
+        pCam.transform.eulerAngles = pBody.transform.eulerAngles + new Vector3(vLookAngle * invYval, angle, 0);//rotate cam vertically -- horizontal in standing action / sliding action
     }
 }
