@@ -202,7 +202,11 @@ public class PlayerScript : MonoBehaviour
         if (Mathf.Abs(moveInput.x) > .5f) { isMovingx = true; } else { isMovingx = false; }
 
         //Jumping Control
-        if (jumping == 1 && jumpCharge < maxJump)
+        if (jumping == 1 && jumpCharge < 5)
+        {
+            jumpCharge += 5;
+        }
+        else if (jumping == 1 && jumpCharge < maxJump)
         {
             jumpCharge += jumpChargeSpeed;
         }
@@ -210,6 +214,8 @@ public class PlayerScript : MonoBehaviour
         {
             jumpCharge = maxJump;
         }
+        
+
 
         //state check to call different actions
        switch (s)
@@ -388,7 +394,7 @@ public class PlayerScript : MonoBehaviour
         
         UnBrace();
 
-        if (slideCharge > 0 && sliding > 0)
+        if (slideCharge > 1 && sliding > 0)
         {
             //sets state to sliding if possible, moves camera down, and give the slide boost modifier
             s = States.sliding;
