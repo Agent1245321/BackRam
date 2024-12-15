@@ -439,7 +439,7 @@ public class PlayerScript : MonoBehaviour
         }
         else
         {
-            if (Mathf.Abs(zVelocity) > .1f) zVelocity *= stoppingPower; //if going faster than snail slow down by a lot
+            if (Mathf.Abs(zVelocity) > .5f) zVelocity *= stoppingPower; //if going faster than snail slow down by a lot
             else zVelocity = 0; // if going slower than snail stop completely
         }
 
