@@ -55,8 +55,8 @@ public class PlayerScript : MonoBehaviour
         
         //values
         private Vector2 moveInput; //pull the Vector 2 from the input system
-        private float xVelocity;
-        private float zVelocity;
+        public float xVelocity;
+        public float zVelocity;
         public float yVelocity;
         
 
@@ -70,7 +70,7 @@ public class PlayerScript : MonoBehaviour
         public float slideRecharge;
 
         //values
-        private float slideCharge;
+        public float slideCharge;
         private float sliding;
 
     //Jumping - - - - -
@@ -83,7 +83,7 @@ public class PlayerScript : MonoBehaviour
 
         //values
         private float jumping;
-        private float jumpCharge;
+        public float jumpCharge;
         public bool grounded;
 
     //bracing
