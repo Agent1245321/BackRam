@@ -291,12 +291,12 @@ public class PlayerScript : MonoBehaviour
         if (Mathf.Abs(angle) > 5f)
         {
             Debug.Log("Fixing Angle");
-            angle -= braceSpeed;
+            angle -= braceSpeed * 30;
         }
         else if (Mathf.Abs(angle) < -5f)
             {
                 Debug.Log("Fixing Angle");
-                angle += braceSpeed * 10;
+                angle += braceSpeed * 30;
             }
             else
         {

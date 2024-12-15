@@ -1353,12 +1353,12 @@ MonoBehaviour:
   slideJumpHMod: 1
   slideJumpVMod: 0.65
   grounded: 0
-  braceSpeed: 0.2
+  braceSpeed: 0.05
   braced: 0
   brace: 0
   angle: 0
   s: 0
-  rollRevolutions: 1
+  rollRevolutions: 3
   rollSpeed: 3
   roll: 0
 --- !u!114 &483405015
